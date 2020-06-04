@@ -3,7 +3,7 @@ local whitePieces = {}
 local blackPieces = {}
 
 function love.load()
-	love.window.setTitle("Chess")
+    love.window.setTitle("Chess")
     handCursor = love.mouse.getSystemCursor("hand")
     love.window.setMode(640, 640, { fullscreen = false })
     size = 80
@@ -87,5 +87,5 @@ function setBoard()
 end
 
 function isPointInRect(x, y, width, height, px, py)
-  return not (px < x or py < y or px > x + width or py > y + height)
+	return not (px < x or py < y or px > x + width or py > y + height)
 end
