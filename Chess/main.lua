@@ -10,7 +10,7 @@ local blackPieces = {}
 local boardState = {}
 local highlitSpaces = {}
 local selectedPiece = {}
-local playerTurn = 1
+local playerTurn = "white"
 
 function love.load()
     love.window.setTitle("Chess")
@@ -41,7 +41,6 @@ function love.mousepressed(x, y, button, istouch)
 		pos = mousePositionToBoardPosition(love.mouse.getPosition())
 
         if selectedPiece ~= nil and selectedPiece.row == pos.row and selectedPiece.col == pos.col then
-			cPrint("row: " .. selectedPiece.row .. ", col: " .. selectedPiece.col)
             highlitSpaces = {}
             selectedPiece = {}
         elseif isHighlit(pos.row, pos.col) then
@@ -54,7 +53,13 @@ function love.mousepressed(x, y, button, istouch)
             boardState[selectedPiece.row][selectedPiece.col] = nil
             highlitSpaces = {}
             selectedPiece = {}
-        elseif boardState[pos.row][pos.col] ~= nil then
+
+			if playerTurn == "white" then
+				playerTurn = "black"
+			else
+				playerTurn = "white"
+			end
+        elseif boardState[pos.row][pos.col] ~= nil and boardState[pos.row][pos.col].color == playerTurn then
             selectedPiece = { row = pos.row, col = pos.col }
 			highlitSpaces = boardState[pos.row][pos.col].movesFunc(pos.row, pos.col, boardState)
 		end
