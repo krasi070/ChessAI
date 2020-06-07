@@ -1,11 +1,15 @@
 require "piecemovement"
 
+local showConsole = false
+local consoleLog = {}
+
 local spriteSheet
 local whitePieces = {}
 local blackPieces = {}
 
 local boardState = {}
 local highlitSpaces = {}
+local selectedPiece = {}
 local playerTurn = 1
 
 function love.load()
@@ -18,23 +22,48 @@ function love.load()
     initBoardState()
     whiteColor = { 1, 1, 1, 1 }
     blackColor = { 0, 0, 0, 1 }
-    highlightColor = { 255 / 255, 216 / 255, 0 / 255, 0.5 }
+    highlightColor = { 255 / 255, 216 / 255, 0 / 255, 0.75 }
 end
 
 function love.draw()
 	love.graphics.clear()
-    drawBoard()
+	drawBoard()
 	drawHighlitSpaces()
-    drawPieces()
+	drawPieces()
+
+	if showConsole then
+		drawConsole()
+	end
 end
 
 function love.mousepressed(x, y, button, istouch)
 	if button == 1 then
 		pos = mousePositionToBoardPosition(love.mouse.getPosition())
 
-		if boardState[pos.row][pos.col] ~= nil then
+        if selectedPiece ~= nil and selectedPiece.row == pos.row and selectedPiece.col == pos.col then
+			cPrint("row: " .. selectedPiece.row .. ", col: " .. selectedPiece.col)
+            highlitSpaces = {}
+            selectedPiece = {}
+        elseif isHighlit(pos.row, pos.col) then
+			if (pos.row ~= selectedPiece.row or pos.col ~= selectedPiece.col) and
+				boardState[selectedPiece.row][selectedPiece.col].moved ~= nil then
+				boardState[selectedPiece.row][selectedPiece.col].moved = true
+			end
+
+            boardState[pos.row][pos.col] = boardState[selectedPiece.row][selectedPiece.col]
+            boardState[selectedPiece.row][selectedPiece.col] = nil
+            highlitSpaces = {}
+            selectedPiece = {}
+        elseif boardState[pos.row][pos.col] ~= nil then
+            selectedPiece = { row = pos.row, col = pos.col }
 			highlitSpaces = boardState[pos.row][pos.col].movesFunc(pos.row, pos.col, boardState)
 		end
+	end
+end
+
+function love.keypressed(key, scancode, isrepeat)
+	if key == "lshift" then
+		showConsole = not showConsole
 	end
 end
 
@@ -125,88 +154,88 @@ function initBoardState()
     boardState[0][3] = {
         sprite = blackPieces["queen"],
         color = "black",
-        movesFunc = getPossibleKingMoves
+        movesFunc = getPossibleQueenMoves
     }
 
     boardState[7][3] = {
         sprite = whitePieces["queen"],
         color = "white",
-        movesFunc = getPossibleKingMoves
+        movesFunc = getPossibleQueenMoves
     }
 
     -- Bishops
     boardState[0][2] = {
         sprite = blackPieces["bishop"],
         color = "black",
-        movesFunc = getPossibleKingMoves
+        movesFunc = getPossibleBishopMoves
     }
 
     boardState[0][5] = {
         sprite = blackPieces["bishop"],
         color = "black",
-        movesFunc = getPossibleKingMoves
+        movesFunc = getPossibleBishopMoves
     }
 
     boardState[7][2] = {
         sprite = whitePieces["bishop"],
         color = "white",
-        movesFunc = getPossibleKingMoves
+        movesFunc = getPossibleBishopMoves
     }
 
     boardState[7][5] = {
         sprite = whitePieces["bishop"],
         color = "white",
-        movesFunc = getPossibleKingMoves
+        movesFunc = getPossibleBishopMoves
     }
 
     -- Knights
     boardState[0][1] = {
         sprite = blackPieces["knight"],
         color = "black",
-        movesFunc = getPossibleKingMoves
+        movesFunc = getPossibleKnightMoves
     }
 
     boardState[0][6] = {
         sprite = blackPieces["knight"],
         color = "black",
-        movesFunc = getPossibleKingMoves
+        movesFunc = getPossibleKnightMoves
     }
 
     boardState[7][1] = {
         sprite = whitePieces["knight"],
         color = "white",
-        movesFunc = getPossibleKingMoves
+        movesFunc = getPossibleKnightMoves
     }
 
     boardState[7][6] = {
         sprite = whitePieces["knight"],
         color = "white",
-        movesFunc = getPossibleKingMoves
+        movesFunc = getPossibleKnightMoves
     }
 
     -- Rooks
     boardState[0][0] = {
         sprite = blackPieces["rook"],
         color = "black",
-        movesFunc = getPossibleKingMoves
+        movesFunc = getPossibleRookMoves
     }
 
     boardState[0][7] = {
         sprite = blackPieces["rook"],
         color = "black",
-        movesFunc = getPossibleKingMoves
+        movesFunc = getPossibleRookMoves
     }
 
     boardState[7][0] = {
         sprite = whitePieces["rook"],
         color = "white",
-        movesFunc = getPossibleKingMoves
+        movesFunc = getPossibleRookMoves
     }
 
     boardState[7][7] = {
         sprite = whitePieces["rook"],
         color = "white",
-        movesFunc = getPossibleKingMoves
+        movesFunc = getPossibleRookMoves
     }
 
     -- Pawns
@@ -231,6 +260,43 @@ function isPointInRect(x, y, width, height, px, py)
     return not (px < x or py < y or px > x + width or py > y + height)
 end
 
+function isHighlit(row, col)
+    for i = 1, #highlitSpaces do
+        if highlitSpaces[i].row == row and highlitSpaces[i].col == col then
+            return true
+        end
+    end
+
+    return false
+end
+
 function mousePositionToBoardPosition(x, y)
    return { row = math.floor(y / size), col = math.floor(x / size) }
+end
+
+function cPrint(message)
+	now = os.date("*t")
+	consoleLog[#consoleLog + 1] = {
+		timestamp = now.hour .. ":" .. now.min .. ":" .. now.sec,
+		message = message
+	}
+end
+
+function drawConsole()
+    width, height = love.graphics.getDimensions()
+	cWidth = width * 2 / 3 - width / 40
+	cHeight = height / 2 - height / 40
+
+    love.graphics.setColor(0, 0, 0, 0.8)
+    love.graphics.rectangle("fill", width / 40, height / 2, cWidth, cHeight)
+
+    love.graphics.setFont(love.graphics.newFont(height / 40))
+    love.graphics.setColor(1, 1, 1, 1)
+
+	for i = 1, math.min(#consoleLog, 10) do
+		index = #consoleLog - (math.min(#consoleLog, 10) - i)
+		love.graphics.print(
+			consoleLog[index].timestamp .. " - " .. consoleLog[index].message,
+			width / 20 , (i - 0.25) * cHeight / 10 + cHeight)
+	end
 end
