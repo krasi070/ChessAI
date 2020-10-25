@@ -15,14 +15,18 @@ local playerTurn = "white"
 function love.load()
     love.window.setTitle("Chess")
     handCursor = love.mouse.getSystemCursor("hand")
-    love.window.setMode(640, 640, { fullscreen = false })
+    love.window.setMode(640, 720, { fullscreen = false })
     size = 80
+    highlitSize = 70
+    highlitSign = 1
+    highlitMultiplier = 40
+    highlitOffset = 5
     loadSprites()
 
     initBoardState()
     whiteColor = { 1, 1, 1, 1 }
     blackColor = { 0, 0, 0, 1 }
-    highlightColor = { 255 / 255, 216 / 255, 0 / 255, 0.75 }
+    highlightColor = { 255 / 255, 216 / 255, 0 / 255, 1 }
 end
 
 function love.draw()
@@ -34,6 +38,16 @@ function love.draw()
 	if showConsole then
 		drawConsole()
 	end
+end
+
+function love.update(dt)
+    newValue = highlitSize + (highlitSign * dt * highlitMultiplier)
+    if newValue > 80 or newValue < 64 then
+        highlitSign = highlitSign * -1;
+    end
+
+    highlitSize = highlitSize + (highlitSign * dt * highlitMultiplier)
+    highlitOffset = (size - highlitSize) / 2
 end
 
 function love.mousepressed(x, y, button, istouch)
@@ -107,7 +121,12 @@ function drawBoard()
 
 			if isPointInRect(j * size, i * size, size, size, love.mouse.getPosition()) then
                 love.graphics.setColor(unpack(highlightColor))
-                love.graphics.rectangle("fill", j * size, i * size, size, size)
+                love.graphics.rectangle(
+                    "fill",
+                    j * size + highlitOffset,
+                    i * size + highlitOffset,
+                    highlitSize,
+                    highlitSize)
                 love.mouse.setCursor(handCursor)
 			end
         end
@@ -118,7 +137,12 @@ function drawHighlitSpaces()
 	love.graphics.setColor(unpack(highlightColor))
 
 	for i = 1, #highlitSpaces do
-		love.graphics.rectangle("fill", highlitSpaces[i].col * size, highlitSpaces[i].row * size, size, size)
+		love.graphics.rectangle(
+            "fill",
+            highlitSpaces[i].col * size + highlitOffset,
+            highlitSpaces[i].row * size + highlitOffset,
+            highlitSize,
+            highlitSize)
 	end
 end
 
